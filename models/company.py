@@ -1,7 +1,7 @@
 from sqlalchemy.dialects.postgresql import UUID
 import datetime
 import uuid
-from extensions import db  # ✅ on utilise l'instance partagée
+from extensions import db
 
 class Company(db.Model):
     __tablename__ = 'companies'
