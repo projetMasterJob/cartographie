@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from sqlalchemy import text
 import os
+from math import cos, radians
 
 load_dotenv()
 
@@ -30,42 +31,42 @@ def home():
 @app.route('/companies', methods=['GET'])
 def get_companies():
     companies = Company.query.all()
-    return jsonify([c.to_dict() for c in companies])
+    result = []
+    for company in companies:
+        company_dict = company.to_dict()
+        
+        # Récupérer la localisation de l'entreprise
+        location = Location.query.filter_by(
+            entity_type='company', 
+            entity_id=company.id
+        ).first()
+        company_dict['location'] = location.to_dict() if location else None
+        
+        # Récupérer les jobs de l'entreprise
+        jobs = Job.query.filter_by(company_id=company.id).all()
+        company_dict['jobs'] = [job.to_dict() for job in jobs]
+        
+        result.append(company_dict)
+    
+    return jsonify(result)
 
 @app.route('/companies/<uuid:company_id>', methods=['GET'])
 def get_company(company_id):
     company = Company.query.get_or_404(company_id)
-    return jsonify(company.to_dict())
-
-@app.route('/companies', methods=['POST'])
-def create_company():
-    data = request.json
-    company = Company(
-        user_id=data['user_id'],
-        name=data['name'],
-        description=data.get('description'),
-        website=data.get('website')
-    )
-    db.session.add(company)
-    db.session.commit()
-    return jsonify(company.to_dict()), 201
-
-@app.route('/companies/<uuid:company_id>', methods=['PUT'])
-def update_company(company_id):
-    company = Company.query.get_or_404(company_id)
-    data = request.json
-    company.name = data.get('name', company.name)
-    company.description = data.get('description', company.description)
-    company.website = data.get('website', company.website)
-    db.session.commit()
-    return jsonify(company.to_dict())
-
-@app.route('/companies/<uuid:company_id>', methods=['DELETE'])
-def delete_company(company_id):
-    company = Company.query.get_or_404(company_id)
-    db.session.delete(company)
-    db.session.commit()
-    return '', 204
+    company_dict = company.to_dict()
+    
+    # Récupérer la localisation de l'entreprise
+    location = Location.query.filter_by(
+        entity_type='company', 
+        entity_id=company.id
+    ).first()
+    company_dict['location'] = location.to_dict() if location else None
+    
+    # Récupérer les jobs de l'entreprise
+    jobs = Job.query.filter_by(company_id=company.id).all()
+    company_dict['jobs'] = [job.to_dict() for job in jobs]
+    
+    return jsonify(company_dict)
 
 @app.route('/jobs', methods=['GET'])
 def get_jobs():
@@ -77,78 +78,61 @@ def get_job(job_id):
     job = Job.query.get_or_404(job_id)
     return jsonify(job.to_dict())
 
-@app.route('/jobs', methods=['POST'])
-def create_job():
-    data = request.json
-    job = Job(
-        company_id=data['company_id'],
-        title=data['title'],
-        description=data['description'],
-        salary=data.get('salary'),
-        job_type=data['job_type']
-    )
-    db.session.add(job)
-    db.session.commit()
-    return jsonify(job.to_dict()), 201
-
-@app.route('/jobs/<uuid:job_id>', methods=['PUT'])
-def update_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    data = request.json
-    job.title = data.get('title', job.title)
-    job.description = data.get('description', job.description)
-    job.salary = data.get('salary', job.salary)
-    job.job_type = data.get('job_type', job.job_type)
-    db.session.commit()
-    return jsonify(job.to_dict())
-
-@app.route('/jobs/<uuid:job_id>', methods=['DELETE'])
-def delete_job(job_id):
-    job = Job.query.get_or_404(job_id)
-    db.session.delete(job)
-    db.session.commit()
-    return '', 204
-
-@app.route('/locations', methods=['GET'])
-def get_locations():
-    locations = Location.query.all()
-    return jsonify([l.to_dict() for l in locations])
-
-@app.route('/locations/<uuid:location_id>', methods=['GET'])
-def get_location(location_id):
-    location = Location.query.get_or_404(location_id)
-    return jsonify(location.to_dict())
-
-@app.route('/locations', methods=['POST'])
-def create_location():
-    data = request.json
-    location = Location(
-        entity_type=data['entity_type'],
-        entity_id=data['entity_id'],
-        latitude=data['latitude'],
-        longitude=data['longitude'],
-        address=data.get('address')
-    )
-    db.session.add(location)
-    db.session.commit()
-    return jsonify(location.to_dict()), 201
-
-@app.route('/locations/<uuid:location_id>', methods=['PUT'])
-def update_location(location_id):
-    location = Location.query.get_or_404(location_id)
-    data = request.json
-    location.latitude = data.get('latitude', location.latitude)
-    location.longitude = data.get('longitude', location.longitude)
-    location.address = data.get('address', location.address)
-    db.session.commit()
-    return jsonify(location.to_dict())
-
-@app.route('/locations/<uuid:location_id>', methods=['DELETE'])
-def delete_location(location_id):
-    location = Location.query.get_or_404(location_id)
-    db.session.delete(location)
-    db.session.commit()
-    return '', 204
+@app.route('/map/entities', methods=['GET'])
+def get_entities_in_map_zone():
+    # Paramètres de la carte
+    center_lat = request.args.get('center_lat', type=float)
+    center_lng = request.args.get('center_lng', type=float)
+    zoom_level = request.args.get('zoom_level', type=int, default=12)
+    radius_km = request.args.get('radius_km', type=float)
+    
+    # Validation des paramètres requis
+    if center_lat is None or center_lng is None:
+        return jsonify({'error': 'center_lat et center_lng sont requis'}), 400
+    
+    # Si pas de rayon fourni, le calculer selon le zoom
+    if not radius_km:
+        radius_km = 50.0 / (2 ** (zoom_level - 10))
+    
+    # Calculer les bounds de la zone
+    lat_delta = radius_km / 111.0  # 1 degré ≈ 111 km
+    lng_delta = radius_km / (111.0 * cos(radians(center_lat)))
+    
+    # Récupérer toutes les localisations dans la zone
+    locations = Location.query.filter(
+        Location.latitude.between(center_lat - lat_delta, center_lat + lat_delta),
+        Location.longitude.between(center_lng - lng_delta, center_lng + lng_delta)
+    ).all()
+    
+    # Organiser les résultats
+    companies = []
+    jobs = []
+    
+    for location in locations:
+        if location.entity_type == 'company':
+            company = Company.query.get(location.entity_id)
+            if company:
+                company_dict = company.to_dict()
+                company_dict['location'] = location.to_dict()
+                companies.append(company_dict)
+        elif location.entity_type == 'job':
+            job = Job.query.get(location.entity_id)
+            if job:
+                job_dict = job.to_dict()
+                job_dict['location'] = location.to_dict()
+                jobs.append(job_dict)
+    
+    return jsonify({
+        'center': {
+            'lat': center_lat,
+            'lng': center_lng
+        },
+        'radius_km': radius_km,
+        'zoom_level': zoom_level,
+        'companies': companies,
+        'jobs': jobs,
+        'total_entities': len(companies) + len(jobs)
+    })
 
 if __name__ == '__main__':
     with app.app_context():

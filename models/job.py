@@ -13,6 +13,7 @@ class Job(db.Model):
     salary = db.Column(db.Numeric(10,2), nullable=True)
     job_type = db.Column(db.Enum('full_time', 'part_time', 'internship', 'contract', name='job_type_enum'), nullable=False)
     posted_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    image_url = db.Column(db.String(255), nullable=True)
 
     def to_dict(self):
         return {
@@ -22,5 +23,6 @@ class Job(db.Model):
             "description": self.description,
             "salary": float(self.salary) if self.salary is not None else None,
             "job_type": self.job_type,
-            "posted_at": self.posted_at.isoformat()
+            "posted_at": self.posted_at.isoformat(),
+            "image_url": self.image_url
         } 

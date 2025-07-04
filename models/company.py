@@ -12,6 +12,7 @@ class Company(db.Model):
     description = db.Column(db.Text)
     website = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    image_url = db.Column(db.String(255), nullable=True)
 
     def to_dict(self):
         return {
@@ -20,5 +21,6 @@ class Company(db.Model):
             "name": self.name,
             "description": self.description,
             "website": self.website,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
+            "image_url": self.image_url
         }
