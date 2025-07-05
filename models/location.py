@@ -12,6 +12,7 @@ class Location(db.Model):
     latitude = db.Column(db.Numeric(9,6), nullable=False)
     longitude = db.Column(db.Numeric(9,6), nullable=False)
     address = db.Column(db.Text)
+    cp = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     __table_args__ = (db.UniqueConstraint('entity_type', 'entity_id', name='uix_entity_type_id'),)
@@ -24,5 +25,6 @@ class Location(db.Model):
             "latitude": float(self.latitude),
             "longitude": float(self.longitude),
             "address": self.address,
+            "cp": self.cp,
             "created_at": self.created_at.isoformat()
         } 
