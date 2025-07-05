@@ -42,10 +42,6 @@ def get_companies():
         ).first()
         company_dict['location'] = location.to_dict() if location else None
         
-        # Récupérer les jobs de l'entreprise
-        jobs = Job.query.filter_by(company_id=company.id).all()
-        company_dict['jobs'] = [job.to_dict() for job in jobs]
-        
         result.append(company_dict)
     
     return jsonify(result)
@@ -71,13 +67,36 @@ def get_company(company_id):
 @app.route('/jobs', methods=['GET'])
 def get_jobs():
     jobs = Job.query.all()
-    return jsonify([j.to_dict() for j in jobs])
+    result = []
+    for job in jobs:
+        job_dict = job.to_dict()
+        
+        # Récupérer la localisation du job
+        location = Location.query.filter_by(
+            entity_type='job', 
+            entity_id=job.id
+        ).first()
+        job_dict['location'] = location.to_dict() if location else None
+        
+        result.append(job_dict)
+    
+    return jsonify(result)
 
 @app.route('/jobs/<uuid:job_id>', methods=['GET'])
 def get_job(job_id):
     job = Job.query.get_or_404(job_id)
-    return jsonify(job.to_dict())
+    job_dict = job.to_dict()
+    
+    # Récupérer la localisation du job
+    location = Location.query.filter_by(
+        entity_type='job', 
+        entity_id=job.id
+    ).first()
+    job_dict['location'] = location.to_dict() if location else None
+    
+    return jsonify(job_dict)
 
+# Utilisé pour la page "home_map"
 @app.route('/map/entities', methods=['GET'])
 def get_entities_in_map_zone():
     # Paramètres de la carte
@@ -137,4 +156,4 @@ def get_entities_in_map_zone():
 if __name__ == '__main__':
     with app.app_context():
         test_db_connection()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
