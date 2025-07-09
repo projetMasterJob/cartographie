@@ -87,12 +87,19 @@ def get_job(job_id):
     job = Job.query.get_or_404(job_id)
     job_dict = job.to_dict()
     
-    # Récupérer la localisation du job
     location = Location.query.filter_by(
         entity_type='job', 
         entity_id=job.id
     ).first()
     job_dict['location'] = location.to_dict() if location else None
+    
+    company = Company.query.get(job.company_id)
+    if company:
+        job_dict['company_name'] = company.name
+        job_dict['company_image_url'] = company.image_url
+    else:
+        job_dict['company_name'] = None
+        job_dict['company_image_url'] = None
     
     return jsonify(job_dict)
 
@@ -123,7 +130,7 @@ def get_entities_in_map_zone():
         Location.longitude.between(center_lng - lng_delta, center_lng + lng_delta)
     ).all()
     
-    # Organiser les résultats
+    # On récupère les entreprise et les jobs dans la zone
     companies = []
     jobs = []
     
