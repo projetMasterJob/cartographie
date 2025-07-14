@@ -1,6 +1,6 @@
 # cartographie
 
-cartographielocal est une application dédiée à la récupération des entreprises, des emplois, de leurs informations et de leur localisation. Elle permet d’extraire, de consulter et de manipuler ces données via une API.
+Ce micro service permet la récupération des entreprises, des emplois, de leurs informations et de leur localisation.
 
 ---
 
