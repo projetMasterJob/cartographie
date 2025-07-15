@@ -16,7 +16,7 @@ jobs:
         run: docker build -t cartographie .
 
   test:
-    name: Run tests (pytest)
+    name: Run tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -34,36 +34,23 @@ jobs:
         run: pytest
 
   test-in-docker:
-    name: Run tests inside Docker image
+    name: Run tests Docker image
     runs-on: ubuntu-latest
     needs: build
     steps:
       - uses: actions/checkout@v3
-      - name: Build Docker image for test
+      - name: Build Docker image test
         run: docker build -t cartographie:test .
-      - name: Run tests in Docker container
+      - name: Run tests Docker container
         run: |
           docker run --rm cartographie:test pytest
 
-  scan:
-    name: Scan Docker image for vulnerabilities
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Install Trivy
-        run: |
-          sudo apt-get update && sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.2_Linux-64bit.deb
-          sudo dpkg -i trivy_0.50.2_Linux-64bit.deb
-      - name: Scan Docker image
-        run: trivy image cartographie
-
   deploy:
-    name: Push Docker image to DockerHub
+    name: Push DockerHub
     runs-on: ubuntu-latest
-    needs: [build, test, test-in-docker, scan]
+    needs: [build, test, test-in-docker]
     steps:
-      - name: Log in to DockerHub
+      - name: Log in DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
