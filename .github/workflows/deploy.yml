@@ -26,7 +26,6 @@ jobs:
   test-in-docker:
     name: Run tests Docker image
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - uses: actions/checkout@v3
       - name: Build Docker image test
