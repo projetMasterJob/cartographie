@@ -1,8 +1,9 @@
+# Workflow permettant de faire les tests hors Docker (avec coverage) et dans l'image Docker, puis de build et push l'image sur DockerHub si les tests sont OK
 name: CI/CD Cartographie
 
 on:
   push:
-    branches: [ docker ]
+    branches: [ main ]
 
 jobs:
   test:
