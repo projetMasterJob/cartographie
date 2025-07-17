@@ -25,7 +25,7 @@ Ce micro service permet la récupération des entreprises, des emplois, de leurs
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/votre-utilisateur/cartographielocal.git
+git clone https://github.com/projetMasterJob/cartographielocal.git
 cd cartographielocal
 ```
 
